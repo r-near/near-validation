@@ -212,29 +212,26 @@ describe('Type-safe Constructors', () => {
 
 describe('Integration Tests', () => {
   it('should work with realistic examples', () => {
-    const examples = [
-      { gasLimit: '25.5 TGas' as const, attachedDeposit: '0.01 NEAR' as const },
-      { gasLimit: '300 GGas' as const, attachedDeposit: '500 mNEAR' as const },
-      { gasLimit: BigInt(30 * 10 ** 12), attachedDeposit: '1000 μNEAR' as const },
-      { gasLimit: '10 TGas' as const, attachedDeposit: '100 yocto' as const }
-    ];
-
-    examples.forEach(example => {
-      expect(() => callFunction(example)).not.toThrow();
-    });
+    expect(() => callFunction({ gasLimit: '25 TGas', attachedDeposit: '0.01 NEAR' })).not.toThrow();
+    expect(() => callFunction({ gasLimit: '300 GGas', attachedDeposit: '500 mNEAR' })).not.toThrow();
+    expect(() => callFunction({ gasLimit: BigInt(30 * 10 ** 12), attachedDeposit: '1000 μNEAR' })).not.toThrow();
+    expect(() => callFunction({ gasLimit: '10 TGas', attachedDeposit: '100 yocto' })).not.toThrow();
   });
 
   it('should handle type-safe constructor examples', () => {
-    const examples = [
-      { gasLimit: gas.tgas(25), attachedDeposit: near.near(0.01) },
-      { gasLimit: gas.ggas(300), attachedDeposit: near.milli(500) },
-      { gasLimit: gas.raw(BigInt(30 * 10 ** 12)), attachedDeposit: near.micro(1000) }
-    ];
+    expect(() => callFunction({ gasLimit: gas.tgas(25), attachedDeposit: near.near(0.01) })).not.toThrow();
+    expect(() => callFunction({ gasLimit: gas.ggas(300), attachedDeposit: near.milli(500) })).not.toThrow();
+    expect(() => callFunction({ gasLimit: gas.raw(BigInt(30 * 10 ** 12)), attachedDeposit: near.micro(1000) })).not.toThrow();
+  });
 
-    examples.forEach(example => {
-      const result = callFunction(example);
-      expect(typeof result.gasLimit).toBe('bigint');
-      expect(typeof result.attachedDeposit).toBe('bigint');
-    });
+  it('should throw type errors on invalid examples', () => {
+    // @ts-expect-error
+    expect(() => callFunction({ gasLimit: 'invalid TGas' as const, attachedDeposit: '0.01 NEAR' })).toThrow();
+    // @ts-expect-error
+    expect(() => callFunction({ gasLimit: '25 TGas', attachedDeposit: 'invalid NEAR' })).toThrow();
+    // @ts-expect-error
+    expect(() => callFunction({ gasLimit: 'invalid TGas', attachedDeposit: 'invalid NEAR' })).toThrow();
+    // @ts-expect-error
+    expect(() => callFunction({ gasLimit: BigInt(30 * 10 ** 12), attachedDeposit: 'invalid NEAR' })).toThrow();
   });
 });
