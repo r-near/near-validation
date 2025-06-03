@@ -125,13 +125,73 @@ callFunction({
 });
 ```
 
-## TypeScript Types
+## TypeScript Type Safety
+
+### Compile-Time Validation
+
+The library provides strong compile-time type safety with template literal types:
 
 ```typescript
-type GasInput = string | bigint;     // "25 TGas" | BigInt(25000000000000)
-type NearInput = string | bigint;    // "0.01 NEAR" | BigInt(10**22)
-type GasOutput = bigint;             // Always base Gas units
-type NearOutput = bigint;            // Always yoctoNEAR
+// ✅ These get full IntelliSense and type checking:
+type ValidGasInputs = 
+  | "25 TGas" | "25TGas" | "25 tgas"      // TGas variants
+  | "300 GGas" | "300 ggas"              // GGas variants  
+  | "1000 Gas" | "1000 gas"              // Gas variants
+  | bigint;                              // Raw values
+
+type ValidNearInputs = 
+  | "1 NEAR" | "1 near"                  // NEAR variants
+  | "500 mNEAR" | "500 milliNEAR"        // Milli variants
+  | "1000 μNEAR" | "1000 microNEAR"      // Micro variants
+  | "100 yocto" | "100 yoctoNEAR"        // Yocto variants
+  | bigint;                              // Raw values
+
+// ❌ These will show TypeScript errors:
+callFunction({
+  gasLimit: "25 XGas",     // ❌ Unknown unit
+  attachedDeposit: "1 ETH" // ❌ Wrong token
+});
+```
+
+### Type-Safe Constructors
+
+For maximum compile-time safety, use the provided constructors:
+
+```typescript
+import { gas, near } from './near-validation';
+
+// ✅ Guaranteed valid at compile time:
+const safeCall = callFunction({
+  gasLimit: gas.tgas(25),        // Creates ValidatedGas
+  attachedDeposit: near.near(0.01) // Creates ValidatedNear
+});
+
+// Available constructors:
+const gasValues = {
+  tgas: gas.tgas(25),              // 25 TGas
+  ggas: gas.ggas(300),             // 300 GGas  
+  raw: gas.raw(BigInt(1000))       // Raw gas units
+};
+
+const nearValues = {
+  near: near.near(1),              // 1 NEAR
+  milli: near.milli(500),          // 500 mNEAR
+  micro: near.micro(1000),         // 1000 μNEAR
+  yocto: near.yocto(BigInt(100))   // 100 yoctoNEAR
+};
+```
+
+### Branded Types
+
+The library uses branded types to prevent mixing validated and unvalidated values:
+
+```typescript
+type ValidatedGas = bigint & { __gas_brand: true };
+type ValidatedNear = bigint & { __near_brand: true };
+
+// ✅ Type-safe utility functions:
+gasUtils.toTGas(validatedGas);    // Only accepts ValidatedGas
+nearUtils.toNEAR(validatedNear);  // Only accepts ValidatedNear
 ```
 
 ## Testing
